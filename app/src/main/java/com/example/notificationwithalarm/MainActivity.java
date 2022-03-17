@@ -1,11 +1,13 @@
 package com.example.notificationwithalarm;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
 import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,6 +23,7 @@ import java.io.DataInputStream;
 import java.io.FilterInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -32,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     Boolean childInCar = false;
     Boolean parentInCar = false;
     String error = "original";
+    NotificationManager notificationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,47 +50,52 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
 
-                while(!Thread.currentThread().isInterrupted()) {
+                while(true) {
                     try {
                         getCarseatStatus();
-                        Thread.sleep(1000);
-                        setAlert();
-                        error = "success";
+                        if (childInCar) {
+                            setAlert();
+                        }
+                        Thread.sleep(5000);
                     } catch (InterruptedException e) {
+                        error = e.toString();
                         Thread.currentThread().interrupt();
                     } catch (Exception e) {
                         error = e.toString();
                         break;
                     }
                 }
+
             }
         });
         monitor.start();
 
         Button button = findViewById(R.id.button);
         button.setOnClickListener(v -> {
+            Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+//            childInCar = true;
 
+//            setAlert();
 
-            Intent intent = new Intent(MainActivity.this, ReminderBroadcast.class);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
-
-            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-
-            long timeAtButtonClick = System.currentTimeMillis();
-            long twoSecondsInMillis = 10 * 1000;
-
-            alarmManager.set(AlarmManager.RTC_WAKEUP,
-                    timeAtButtonClick+twoSecondsInMillis,
-                    pendingIntent);
-            Toast.makeText(this, "done", Toast.LENGTH_SHORT).show();
+//            Intent intent = new Intent(MainActivity.this, ReminderBroadcast.class);
+//            PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
+//
+//            AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+//
+//            long timeAtButtonClick = System.currentTimeMillis();
+//            long twoSecondsInMillis = 10 * 1000;
+//
+//            alarmManager.set(AlarmManager.RTC_WAKEUP,
+//                    timeAtButtonClick+twoSecondsInMillis,
+//                    pendingIntent);
         });
 
     }
 
     @Override
     protected void onDestroy() {
-        monitor.interrupt();
         super.onDestroy();
+        monitor.interrupt();
     }
 
     private void createNotificationChannel() {
@@ -98,14 +107,15 @@ public class MainActivity extends AppCompatActivity {
             NotificationChannel channel = new NotificationChannel("notifyLemubit", name, importance);
             channel.setDescription(description);
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+
+            notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(channel);
         }
     }
 
     private void getCarseatStatus() {
         try {
-            URL url = new URL("http://www.google.com");
+            URL url = new URL("http://192.168.100.148:5000");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -116,12 +126,14 @@ public class MainActivity extends AppCompatActivity {
             }
             br.close();
             String str = result.toString();
+            parentInCar = true;
+            error = str;
 
+        } catch (ConnectException e) {
+            parentInCar = false;
         } catch (Exception e) {
-            this.error = e.toString();
-            Log.i("yay", e.toString());
+            error = e.toString();
         }
-
     }
 
     private void setAlert() {
