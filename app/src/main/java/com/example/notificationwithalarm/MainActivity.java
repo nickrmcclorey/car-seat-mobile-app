@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private Thread monitor;
     Boolean childInCar = false;
     Boolean parentInCar = false;
+    Boolean alertSent = false;
     String error = "original";
     NotificationManager notificationManager;
 
@@ -53,9 +54,6 @@ public class MainActivity extends AppCompatActivity {
                 while(true) {
                     try {
                         getCarseatStatus();
-                        if (childInCar) {
-                            setAlert();
-                        }
                         Thread.sleep(5000);
                     } catch (InterruptedException e) {
                         error = e.toString();
@@ -126,13 +124,20 @@ public class MainActivity extends AppCompatActivity {
             }
             br.close();
             String str = result.toString();
+            childInCar = str.toLowerCase().startsWith("true");
             parentInCar = true;
+            alertSent = false;
             error = str;
 
         } catch (ConnectException e) {
             parentInCar = false;
         } catch (Exception e) {
             error = e.toString();
+        }
+
+        if (!parentInCar && childInCar && !alertSent) {
+            setAlert();
+            alertSent = true;
         }
     }
 
