@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -68,13 +69,13 @@ public class MainActivity extends AppCompatActivity {
         });
         monitor.start();
 
-        Button button = findViewById(R.id.button);
-        button.setOnClickListener(v -> {
-            Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
+//        Button button = findViewById(R.id.button);
+//        button.setOnClickListener(v -> {
+//            Toast.makeText(MainActivity.this, error, Toast.LENGTH_SHORT).show();
 //            childInCar = true;
-
+//
 //            setAlert();
-
+//
 //            Intent intent = new Intent(MainActivity.this, ReminderBroadcast.class);
 //            PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
 //
@@ -86,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 //            alarmManager.set(AlarmManager.RTC_WAKEUP,
 //                    timeAtButtonClick+twoSecondsInMillis,
 //                    pendingIntent);
-        });
+//        });
 
     }
 
@@ -113,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void getCarseatStatus() {
         try {
-            URL url = new URL("http://192.168.100.148:5000");
+            URL url = new URL("http://192.168.4.1:5000");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -139,6 +140,22 @@ public class MainActivity extends AppCompatActivity {
             setAlert();
             alertSent = true;
         }
+        updateUI();
+    }
+
+    private void updateUI() {
+        MainActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                TextView text = (TextView) findViewById(R.id.childStatus);
+                String status = childInCar ? "In Carseat" : "Outside";
+                text.setText("Child Status: " + status);
+
+                text = (TextView) findViewById(R.id.parentStatus);
+                status = parentInCar ? "Inside Car" : "Left Car";
+                text.setText("Parent Status: " + status);
+            }
+        });
     }
 
     private void setAlert() {
